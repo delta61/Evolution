@@ -7,12 +7,12 @@
  * 
  */
 class dDocumentParser extends DocumentParser {
-	use user_u; 
-	use user_uOrders;
+	//use user_u; 
+	//use user_uOrders;
 	//use catalog_c;
 	
-	protected $rootCatalog = 3;
-	protected static $_LANGUAGE_ID = 1;
+	
+	public static $_LANGUAGE_ID = 1;
 	public $urlXParams = false;
 	public static $_TABLE_SC;
 	public static $_TABLE_TV;
@@ -26,11 +26,9 @@ class dDocumentParser extends DocumentParser {
 
 	public function __construct() {
 		parent::__construct();
-
 		self::$_TABLE_SC = $this->getFullTableName('site_content');
 		self::$_TABLE_TV = $this->getFullTableName('site_tmplvar_contentvalues');
 		self::$_TABLE_TVNAMES = $this->getFullTableName('site_tmplvars');
-
 		$this->c = new catalog_c($this);
 	}
 
@@ -49,18 +47,34 @@ class dDocumentParser extends DocumentParser {
 	 */
 	public function urlXParams(&$url){
 		$urlOrigin = $url;
+		$this->urlXParams['istCardPage'] = false;
+
+		/**
+		 * @todo во всех проверках в $url записывать все кроме пользовательских параметров
+		 *  - сейчас реализовано только для алиасов карточек товаров
+	 	*/
+		/*
 		if (preg_match("/(.*\/)(_(.*))/usi", $url , $matches)){
 			$url = $matches[1];
 		}
+		*/
 
-		$aliasPattern = "/_([a-z-\d]+)\\".$this->config['friendly_url_suffix']."/isu"; // mutch 1
+		$aliasPattern = "/(.*?)([a-z-\d]+)\\".$this->config['friendly_url_suffix']."/isu"; // mutch 1
 		$filterPattern = "/(_f(\d{1,4}))((_v\d{1,9}(\-\d{1,9})?)+)/isu"; // mutch 2, mutch 3
 		$pagePattern = "/(_page)_(\d{1,5})/isu"; // mutch 2
 		$sortPattern = "/_sort_([a-z]{1,20})_(asc|desc)/isu"; // mutch 1, mutch 2
 		
 		if (preg_match($aliasPattern, $urlOrigin , $matches)){
-			$this->urlXParams['alias'] = $matches[1];
+			if (($idPage = $this->c->checkAliasExist($matches[2])) !== false) {
+				$url = $matches[1];
+				$this->urlXParams['alias'] = $matches[2];
+				$this->urlXParams['idPage'] = $idPage;
+				$this->urlXParams['istCardPage'] = true;
+				$this->toPlaceholder('istCardPage', '1' , 'px.');
+				//$this->c->set($idPage);
+			}
 		}
+
 
 		if (preg_match_all($filterPattern, $urlOrigin , $matches)){
 			if (is_array($matches) 
@@ -85,14 +99,17 @@ class dDocumentParser extends DocumentParser {
 
 
 
+
 	public function sendStrictURI(){
 		if(is_array($this->urlXParams) && count($this->urlXParams)){
+			//echo count($this->urlXParams) . '(!!!)';
 			return; //scorn
 		}else {
-			parent::sendStrictURI();
+			//parent::sendStrictURI();
 		}
 	}
 	
+
 
 
 
